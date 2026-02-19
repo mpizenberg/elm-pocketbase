@@ -1,0 +1,19 @@
+{
+  "name": "elm-pocketbase",
+  "version": "1.0.0",
+  "description": "PocketBase client for Elm - JS companion for elm-concurrent-task",
+  "main": "js/src/index.js",
+  "type": "module",
+  "keywords": [
+    "elm",
+    "pocketbase",
+    "elm-concurrent-task"
+  ],
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "pocketbase": "^0.25.0"
+  },
+  "peerDependencies": {
+    "@andrewmacmurray/elm-concurrent-task": ">=2.0.0"
+  }
+}
