@@ -39,7 +39,7 @@ init : String -> ConcurrentTask Error Client
 init url =
     ConcurrentTask.define
         { function = "pocketbase:init"
-        , expect = ConcurrentTask.expectJson (Decode.map Internal.Client Decode.string)
+        , expect = ConcurrentTask.expectJson (Decode.map Internal.clientFromId Decode.string)
         , errors = ConcurrentTask.expectErrors errorDecoder
         , args = Encode.object [ ( "url", Encode.string url ) ]
         }
