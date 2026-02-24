@@ -33,7 +33,7 @@ port onPocketbaseEvent : (Decode.Value -> msg) -> Sub msg
 type alias User =
     { id : String
     , email : String
-    , username : String
+    , name : String
     }
 
 
@@ -42,7 +42,7 @@ userDecoder =
     Decode.map3 User
         (Decode.field "id" Decode.string)
         (Decode.field "email" Decode.string)
-        (Decode.field "username" Decode.string)
+        (Decode.field "name" Decode.string)
 
 
 type alias Message =
@@ -154,8 +154,8 @@ update msg model =
                 ConcurrentTask.Error err ->
                     ( { model | errors = errorToString err :: model.errors }, Cmd.none )
 
-                ConcurrentTask.UnexpectedError _ ->
-                    ( { model | errors = "Unexpected error during init" :: model.errors }, Cmd.none )
+                ConcurrentTask.UnexpectedError ue ->
+                    ( { model | errors = unexpectedErrorToString ue :: model.errors }, Cmd.none )
 
         GotLogin response ->
             case response of
@@ -190,8 +190,8 @@ update msg model =
                 ConcurrentTask.Error err ->
                     ( { model | errors = errorToString err :: model.errors }, Cmd.none )
 
-                ConcurrentTask.UnexpectedError _ ->
-                    ( { model | errors = "Unexpected error during login" :: model.errors }, Cmd.none )
+                ConcurrentTask.UnexpectedError ue ->
+                    ( { model | errors = unexpectedErrorToString ue :: model.errors }, Cmd.none )
 
         GotLogout response ->
             case response of
@@ -215,8 +215,8 @@ update msg model =
                 ConcurrentTask.Error err ->
                     ( { model | errors = errorToString err :: model.errors }, Cmd.none )
 
-                ConcurrentTask.UnexpectedError _ ->
-                    ( { model | errors = "Unexpected error fetching messages" :: model.errors }, Cmd.none )
+                ConcurrentTask.UnexpectedError ue ->
+                    ( { model | errors = unexpectedErrorToString ue :: model.errors }, Cmd.none )
 
         GotCreated response ->
             case response of
@@ -231,8 +231,8 @@ update msg model =
                 ConcurrentTask.Error err ->
                     ( { model | errors = errorToString err :: model.errors }, Cmd.none )
 
-                ConcurrentTask.UnexpectedError _ ->
-                    ( { model | errors = "Unexpected error creating message" :: model.errors }, Cmd.none )
+                ConcurrentTask.UnexpectedError ue ->
+                    ( { model | errors = unexpectedErrorToString ue :: model.errors }, Cmd.none )
 
         GotSubscribed _ ->
             ( model, Cmd.none )
@@ -417,7 +417,7 @@ viewApp : Model -> User -> Html Msg
 viewApp model user =
     div []
         [ div []
-            [ text ("Logged in as " ++ user.username ++ " ")
+            [ text ("Logged in as " ++ user.name ++ " ")
             , button [ onClick Logout ] [ text "Logout" ]
             ]
         , h2 [] [ text "New message" ]
@@ -496,6 +496,25 @@ errorToString err =
 
         PocketBase.NetworkError msg ->
             "Network error: " ++ msg
+
+
+unexpectedErrorToString : ConcurrentTask.UnexpectedError -> String
+unexpectedErrorToString err =
+    case err of
+        ConcurrentTask.UnhandledJsException { function, message } ->
+            "JS exception in " ++ function ++ ": " ++ message
+
+        ConcurrentTask.ResponseDecoderFailure { function, error } ->
+            "Decoder failure in " ++ function ++ ": " ++ Decode.errorToString error
+
+        ConcurrentTask.ErrorsDecoderFailure { function, error } ->
+            "Error decoder failure in " ++ function ++ ": " ++ Decode.errorToString error
+
+        ConcurrentTask.MissingFunction name ->
+            "Missing function: " ++ name
+
+        ConcurrentTask.InternalError msg ->
+            "Internal error: " ++ msg
 
 
 describeEvent : PocketBase.Realtime.SubscriptionEvent -> String

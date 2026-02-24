@@ -38,8 +38,8 @@ npm install
 npm start
 ```
 
-Open the URL printed by elm-watch (usually <http://localhost:8001>
-or similar). You should see the health check status, a login form,
+Open the URL printed by elm-watch.
+You should see the health check status, a login form,
 and after logging in: a message list, a create form, and a realtime
 event log.
 
