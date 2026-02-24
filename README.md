@@ -34,7 +34,6 @@ Elm (port subscription) ◀─JSON── JS callback ◀── SSE events
 | `PocketBase.Collection` | `getOne`, `getList`, `create` on any collection |
 | `PocketBase.Custom` | Raw HTTP requests to custom API endpoints |
 | `PocketBase.Realtime` | Subscribe/unsubscribe to collection changes via SSE |
-| `PocketBase.Encode` | `Bytes` ↔ Base64 conversion utilities |
 
 ## Example
 

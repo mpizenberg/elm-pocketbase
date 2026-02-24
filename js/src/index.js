@@ -151,21 +151,6 @@ export function createTasks() {
       const pb = getClient(clientId);
       await pb.collection("*").unsubscribe("*");
     },
-
-    "pocketbase:bytesToBase64": ({ bytes }) => {
-      const arr = new Uint8Array(bytes);
-      let binary = "";
-      const chunkSize = 8192;
-      for (let i = 0; i < arr.length; i += chunkSize) {
-        binary += String.fromCharCode(...arr.slice(i, i + chunkSize));
-      }
-      return btoa(binary);
-    },
-
-    "pocketbase:base64ToBytes": ({ base64 }) => {
-      const binary = atob(base64);
-      return Array.from(binary, (c) => c.charCodeAt(0));
-    },
   };
 
   tasks.setEventCallback = (callback) => {
