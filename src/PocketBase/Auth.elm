@@ -1,8 +1,8 @@
-module PocketBase.Auth exposing (AuthRecord, authWithPassword, refreshAuth, isAuthenticated, getAuthRecord, logout, derivePasswordFromKey)
+module PocketBase.Auth exposing (authWithPassword, refreshAuth, isAuthenticated, getAuthRecord, logout)
 
 {-| PocketBase authentication operations.
 
-@docs AuthRecord, authWithPassword, refreshAuth, isAuthenticated, getAuthRecord, logout, derivePasswordFromKey
+@docs authWithPassword, refreshAuth, isAuthenticated, getAuthRecord, logout
 
 -}
 
@@ -13,34 +13,28 @@ import PocketBase exposing (Client, Error)
 import PocketBase.Internal as Internal
 
 
-{-| A record representing an authenticated user.
--}
-type alias AuthRecord =
-    { id : String
-    , username : String
-    , groupId : String
-    }
-
-
-authRecordDecoder : Decode.Decoder AuthRecord
-authRecordDecoder =
-    Decode.map3 AuthRecord
-        (Decode.field "id" Decode.string)
-        (Decode.field "username" Decode.string)
-        (Decode.field "groupId" Decode.string)
-
-
-{-| Authenticate with username + password.
+{-| Authenticate with username/email + password.
 PocketBase stores the JWT token internally in the JS SDK's authStore.
+
+The returned record is decoded with the provided decoder, so you can
+extract whichever fields your auth collection has.
+
+    PocketBase.Auth.authWithPassword client
+        { collection = "users"
+        , identity = "user@example.com"
+        , password = "secret"
+        , decoder = userDecoder
+        }
+
 -}
 authWithPassword :
     Client
-    -> { collection : String, identity : String, password : String }
-    -> ConcurrentTask Error AuthRecord
-authWithPassword client { collection, identity, password } =
+    -> { collection : String, identity : String, password : String, decoder : Decode.Decoder a }
+    -> ConcurrentTask Error a
+authWithPassword client { collection, identity, password, decoder } =
     ConcurrentTask.define
         { function = "pocketbase:authWithPassword"
-        , expect = ConcurrentTask.expectJson authRecordDecoder
+        , expect = ConcurrentTask.expectJson decoder
         , errors = ConcurrentTask.expectErrors PocketBase.errorDecoder
         , args =
             Encode.object
@@ -53,14 +47,27 @@ authWithPassword client { collection, identity, password } =
 
 
 {-| Refresh the current auth token. Fails if not currently authenticated.
+
+    PocketBase.Auth.refreshAuth client
+        { collection = "users"
+        , decoder = userDecoder
+        }
+
 -}
-refreshAuth : Client -> ConcurrentTask Error AuthRecord
-refreshAuth client =
+refreshAuth :
+    Client
+    -> { collection : String, decoder : Decode.Decoder a }
+    -> ConcurrentTask Error a
+refreshAuth client { collection, decoder } =
     ConcurrentTask.define
         { function = "pocketbase:refreshAuth"
-        , expect = ConcurrentTask.expectJson authRecordDecoder
+        , expect = ConcurrentTask.expectJson decoder
         , errors = ConcurrentTask.expectErrors PocketBase.errorDecoder
-        , args = Encode.object [ Internal.clientIdField client ]
+        , args =
+            Encode.object
+                [ Internal.clientIdField client
+                , ( "collection", Encode.string collection )
+                ]
         }
 
 
@@ -77,12 +84,16 @@ isAuthenticated client =
 
 
 {-| Get the current auth record, if authenticated.
+The record is decoded with the provided decoder.
+
+    PocketBase.Auth.getAuthRecord client userDecoder
+
 -}
-getAuthRecord : Client -> ConcurrentTask Never (Maybe AuthRecord)
-getAuthRecord client =
+getAuthRecord : Client -> Decode.Decoder a -> ConcurrentTask Never (Maybe a)
+getAuthRecord client decoder =
     ConcurrentTask.define
         { function = "pocketbase:getAuthRecord"
-        , expect = ConcurrentTask.expectJson (Decode.nullable authRecordDecoder)
+        , expect = ConcurrentTask.expectJson (Decode.nullable decoder)
         , errors = ConcurrentTask.expectNoErrors
         , args = Encode.object [ Internal.clientIdField client ]
         }
@@ -97,19 +108,4 @@ logout client =
         , expect = ConcurrentTask.expectWhatever
         , errors = ConcurrentTask.expectNoErrors
         , args = Encode.object [ Internal.clientIdField client ]
-        }
-
-
-{-| Derive a deterministic password from a Base64 key string.
-Computes: base64url(SHA-256(base64decode(keyString)))
-This is the auth mechanism used by partage: the group's symmetric key
-is hashed to produce a per-group password.
--}
-derivePasswordFromKey : String -> ConcurrentTask Never String
-derivePasswordFromKey keyBase64 =
-    ConcurrentTask.define
-        { function = "pocketbase:derivePassword"
-        , expect = ConcurrentTask.expectJson Decode.string
-        , errors = ConcurrentTask.expectNoErrors
-        , args = Encode.object [ ( "keyBase64", Encode.string keyBase64 ) ]
         }

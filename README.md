@@ -30,11 +30,15 @@ Elm (port subscription) ◀─JSON── JS callback ◀── SSE events
 | Module | Purpose |
 |---|---|
 | `PocketBase` | Client initialization (`init`) and health check |
-| `PocketBase.Auth` | Password auth, token refresh, logout, auth state queries |
+| `PocketBase.Auth` | Password auth, token refresh, logout, auth state queries (generic decoder) |
 | `PocketBase.Collection` | `getOne`, `getList`, `create` on any collection |
 | `PocketBase.Custom` | Raw HTTP requests to custom API endpoints |
 | `PocketBase.Realtime` | Subscribe/unsubscribe to collection changes via SSE |
 | `PocketBase.Encode` | `Bytes` ↔ Base64 conversion utilities |
+
+## Example
+
+A complete working example lives in the [`example/`](example/) directory. See its [README](example/README.md) for setup instructions.
 
 ## Setup
 
@@ -74,6 +78,7 @@ loginAndFetch =
                     { collection = "users"
                     , identity = "user@example.com"
                     , password = "secret"
+                    , decoder = userDecoder
                     }
                     |> ConcurrentTask.andThen
                         (\_ ->

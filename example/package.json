@@ -1,0 +1,18 @@
+{
+  "name": "elm-pocketbase-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run build:js && elm-watch hot",
+    "build:js": "node build.js",
+    "build": "node build.js && elm-watch make --optimize"
+  },
+  "dependencies": {
+    "pocketbase": "^0.26.0"
+  },
+  "devDependencies": {
+    "@andrewmacmurray/elm-concurrent-task": "^2.0.0",
+    "esbuild": "^0.27.0",
+    "elm-watch": "beta"
+  }
+}

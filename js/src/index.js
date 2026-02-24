@@ -40,25 +40,17 @@ export function createTasks() {
         const result = await pb
           .collection(collection)
           .authWithPassword(identity, password);
-        return {
-          id: result.record.id,
-          username: result.record.username,
-          groupId: result.record.groupId,
-        };
+        return result.record;
       } catch (e) {
         return normalizeError(e);
       }
     },
 
-    "pocketbase:refreshAuth": async ({ clientId }) => {
+    "pocketbase:refreshAuth": async ({ clientId, collection }) => {
       const pb = getClient(clientId);
       try {
-        const result = await pb.collection("users").authRefresh();
-        return {
-          id: result.record.id,
-          username: result.record.username,
-          groupId: result.record.groupId,
-        };
+        const result = await pb.collection(collection).authRefresh();
+        return result.record;
       } catch (e) {
         pb.authStore.clear();
         return normalizeError(e);
@@ -73,11 +65,7 @@ export function createTasks() {
     "pocketbase:getAuthRecord": ({ clientId }) => {
       const pb = getClient(clientId);
       if (!pb.authStore.isValid || !pb.authStore.record) return null;
-      return {
-        id: pb.authStore.record.id,
-        username: pb.authStore.record.username,
-        groupId: pb.authStore.record.groupId,
-      };
+      return pb.authStore.record;
     },
 
     "pocketbase:logout": ({ clientId }) => {
@@ -162,14 +150,6 @@ export function createTasks() {
     "pocketbase:unsubscribeAll": async ({ clientId }) => {
       const pb = getClient(clientId);
       await pb.collection("*").unsubscribe("*");
-    },
-
-    "pocketbase:derivePassword": async ({ keyBase64 }) => {
-      const keyBytes = Uint8Array.from(atob(keyBase64), (c) => c.charCodeAt(0));
-      const hashBuffer = await crypto.subtle.digest("SHA-256", keyBytes);
-      const hashArray = new Uint8Array(hashBuffer);
-      const base64 = btoa(String.fromCharCode(...hashArray));
-      return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
     },
 
     "pocketbase:bytesToBase64": ({ bytes }) => {

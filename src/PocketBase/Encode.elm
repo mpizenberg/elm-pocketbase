@@ -1,7 +1,6 @@
 module PocketBase.Encode exposing (bytesToBase64, base64ToBytes)
 
 {-| Binary encoding utilities for converting between Elm Bytes and Base64 strings.
-Used by partage for Loro CRDT update blobs.
 
 @docs bytesToBase64, base64ToBytes
 
@@ -15,8 +14,12 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 
 
-{-| Encode raw bytes to Base64 string (chunked to avoid stack overflow).
-Used for Loro CRDT update blobs before pushing to PocketBase.
+
+-- TODO: this module should not call into ConcurrentTask!
+-- These conversions can be written in pure Elm directly!
+
+
+{-| Encode raw bytes to a Base64 string (chunked to avoid stack overflow).
 -}
 bytesToBase64 : Bytes -> ConcurrentTask Never String
 bytesToBase64 bytes =
@@ -29,7 +32,6 @@ bytesToBase64 bytes =
 
 
 {-| Decode a Base64 string to raw bytes.
-Used when fetching Loro CRDT updates from PocketBase.
 -}
 base64ToBytes : String -> ConcurrentTask Never Bytes
 base64ToBytes base64 =

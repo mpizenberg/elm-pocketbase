@@ -1,0 +1,9 @@
+{
+  "serve": "./public/",
+  "targets": {
+    "Example": {
+      "inputs": ["src/Main.elm"],
+      "output": "public/build/elm.js"
+    }
+  }
+}

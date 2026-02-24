@@ -11,7 +11,7 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
-    "pocketbase": "^0.25.0"
+    "pocketbase": "^0.26.0"
   },
   "peerDependencies": {
     "@andrewmacmurray/elm-concurrent-task": ">=2.0.0"
