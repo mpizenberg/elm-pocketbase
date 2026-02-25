@@ -28,7 +28,7 @@ In the PocketBase admin UI:
 Set the **messages** collection API rules to allow authenticated users
 (or leave them empty for unrestricted access during testing).
 
-3. Create a test user in the **users** collection.
+3. Alternatively, you can create a user directly from the app's sign-up form.
 
 ## 3. Run the example
 
@@ -48,7 +48,7 @@ event log.
 | Feature | Module used |
 |---|---|
 | Client init + health check | `PocketBase.init`, `PocketBase.healthCheck` |
-| Login / logout | `PocketBase.Auth.authWithPassword`, `PocketBase.Auth.logout` |
+| Sign up / login / logout | `PocketBase.Auth.createAccount`, `PocketBase.Auth.authWithPassword`, `PocketBase.Auth.logout` |
 | List records (paginated) | `PocketBase.Collection.getList` |
 | Create a record | `PocketBase.Collection.create` |
 | Realtime events (SSE) | `PocketBase.Realtime.subscribe`, port `onPocketbaseEvent` |

@@ -30,8 +30,8 @@ Elm (port subscription) ◀─JSON── JS callback ◀── SSE events
 | Module | Purpose |
 |---|---|
 | `PocketBase` | Client initialization (`init`) and health check |
-| `PocketBase.Auth` | Password auth, token refresh, logout, auth state queries (generic decoder) |
-| `PocketBase.Collection` | `getOne`, `getList`, `create` on any collection |
+| `PocketBase.Auth` | Password auth, token refresh, logout, auth state queries, account creation/update/deletion, password reset |
+| `PocketBase.Collection` | `getOne`, `getList`, `create`, `update`, `delete` on any collection |
 | `PocketBase.Custom` | Raw HTTP requests to custom API endpoints |
 | `PocketBase.Realtime` | Subscribe/unsubscribe to collection changes via SSE |
 
