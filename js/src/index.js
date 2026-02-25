@@ -109,6 +109,54 @@ export function createTasks() {
       }
     },
 
+    "pocketbase:update": async ({ clientId, collection, id, body }) => {
+      const pb = getClient(clientId);
+      try {
+        return await pb.collection(collection).update(id, body);
+      } catch (e) {
+        return normalizeError(e);
+      }
+    },
+
+    "pocketbase:delete": async ({ clientId, collection, id }) => {
+      const pb = getClient(clientId);
+      try {
+        await pb.collection(collection).delete(id);
+      } catch (e) {
+        return normalizeError(e);
+      }
+    },
+
+    "pocketbase:requestPasswordReset": async ({
+      clientId,
+      collection,
+      email,
+    }) => {
+      const pb = getClient(clientId);
+      try {
+        await pb.collection(collection).requestPasswordReset(email);
+      } catch (e) {
+        return normalizeError(e);
+      }
+    },
+
+    "pocketbase:confirmPasswordReset": async ({
+      clientId,
+      collection,
+      token,
+      password,
+      passwordConfirm,
+    }) => {
+      const pb = getClient(clientId);
+      try {
+        await pb
+          .collection(collection)
+          .confirmPasswordReset(token, password, passwordConfirm);
+      } catch (e) {
+        return normalizeError(e);
+      }
+    },
+
     "pocketbase:customFetch": async ({ clientId, method, path, body }) => {
       const pb = getClient(clientId);
       const url = pb.baseUrl + path;
@@ -162,7 +210,15 @@ export function createTasks() {
 
 function normalizeError(e) {
   const status = e?.status || e?.response?.status || 0;
-  const message = e?.data?.message || e?.message || String(e);
+  let message = e?.data?.message || e?.message || String(e);
+  // Append per-field validation errors if present (e.g. password too short)
+  const fieldErrors = e?.data?.data;
+  if (fieldErrors && typeof fieldErrors === "object") {
+    const details = Object.entries(fieldErrors)
+      .map(([field, err]) => `${field}: ${err.message}`)
+      .join("; ");
+    if (details) message += " " + details;
+  }
   return { error: statusToCode(status) + ":" + message };
 }
 

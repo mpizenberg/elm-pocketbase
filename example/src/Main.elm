@@ -1,7 +1,7 @@
 port module Main exposing (main)
 
-import ConcurrentTask exposing (ConcurrentTask)
 import Browser
+import ConcurrentTask exposing (ConcurrentTask)
 import Html exposing (Html, button, div, form, h1, h2, input, p, span, text)
 import Html.Attributes exposing (class, disabled, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -67,6 +67,9 @@ type alias Model =
     , authUser : Maybe User
     , loginIdentity : String
     , loginPassword : String
+    , signupEmail : String
+    , signupPassword : String
+    , signupName : String
     , messages : List Message
     , newMessageText : String
     , errors : List String
@@ -82,6 +85,7 @@ type Msg
     = OnProgress ( ConcurrentTask.Pool Msg, Cmd Msg )
     | GotInit (ConcurrentTask.Response PocketBase.Error ( PocketBase.Client, Bool ))
     | GotLogin (ConcurrentTask.Response PocketBase.Error ( PocketBase.Client, User ))
+    | GotSignup (ConcurrentTask.Response PocketBase.Error ( PocketBase.Client, User ))
     | GotLogout (ConcurrentTask.Response Never ())
     | GotMessages (ConcurrentTask.Response PocketBase.Error (PocketBase.Collection.ListResult Message))
     | GotCreated (ConcurrentTask.Response PocketBase.Error Message)
@@ -90,6 +94,10 @@ type Msg
     | SetLoginIdentity String
     | SetLoginPassword String
     | SubmitLogin
+    | SetSignupEmail String
+    | SetSignupPassword String
+    | SetSignupName String
+    | SubmitSignup
     | SetNewMessage String
     | SubmitMessage
     | Logout
@@ -127,6 +135,9 @@ init _ =
       , authUser = Nothing
       , loginIdentity = ""
       , loginPassword = ""
+      , signupEmail = ""
+      , signupPassword = ""
+      , signupName = ""
       , messages = []
       , newMessageText = ""
       , errors = []
@@ -193,6 +204,44 @@ update msg model =
                 ConcurrentTask.UnexpectedError ue ->
                     ( { model | errors = unexpectedErrorToString ue :: model.errors }, Cmd.none )
 
+        GotSignup response ->
+            case response of
+                ConcurrentTask.Success ( client, user ) ->
+                    let
+                        fetchTask =
+                            PocketBase.Collection.getList client
+                                { collection = "messages"
+                                , page = 1
+                                , perPage = 50
+                                , filter = Nothing
+                                , sort = Just "-created"
+                                , decoder = messageDecoder
+                                }
+
+                        subscribeTask =
+                            PocketBase.Realtime.subscribe client "messages"
+
+                        ( tasks, cmd ) =
+                            model.tasks
+                                |> attemptWith GotMessages fetchTask
+                                |> attemptWith2 GotSubscribed subscribeTask
+                    in
+                    ( { model
+                        | authUser = Just user
+                        , signupEmail = ""
+                        , signupPassword = ""
+                        , signupName = ""
+                        , tasks = tasks
+                      }
+                    , cmd
+                    )
+
+                ConcurrentTask.Error err ->
+                    ( { model | errors = errorToString err :: model.errors }, Cmd.none )
+
+                ConcurrentTask.UnexpectedError ue ->
+                    ( { model | errors = unexpectedErrorToString ue :: model.errors }, Cmd.none )
+
         GotLogout response ->
             case response of
                 ConcurrentTask.Success () ->
@@ -242,6 +291,50 @@ update msg model =
 
         SetLoginPassword val ->
             ( { model | loginPassword = val }, Cmd.none )
+
+        SetSignupEmail val ->
+            ( { model | signupEmail = val }, Cmd.none )
+
+        SetSignupPassword val ->
+            ( { model | signupPassword = val }, Cmd.none )
+
+        SetSignupName val ->
+            ( { model | signupName = val }, Cmd.none )
+
+        SubmitSignup ->
+            case model.client of
+                Just client ->
+                    let
+                        signupTask =
+                            PocketBase.Auth.createAccount client
+                                { collection = "users"
+                                , body =
+                                    Encode.object
+                                        [ ( "email", Encode.string model.signupEmail )
+                                        , ( "password", Encode.string model.signupPassword )
+                                        , ( "passwordConfirm", Encode.string model.signupPassword )
+                                        , ( "name", Encode.string model.signupName )
+                                        ]
+                                , decoder = Decode.succeed ()
+                                }
+                                |> ConcurrentTask.andThen
+                                    (\_ ->
+                                        PocketBase.Auth.authWithPassword client
+                                            { collection = "users"
+                                            , identity = model.signupEmail
+                                            , password = model.signupPassword
+                                            , decoder = userDecoder
+                                            }
+                                    )
+                                |> ConcurrentTask.map (\user -> ( client, user ))
+
+                        ( tasks, cmd ) =
+                            attemptWith GotSignup signupTask model.tasks
+                    in
+                    ( { model | tasks = tasks }, cmd )
+
+                Nothing ->
+                    ( { model | errors = "Client not initialized" :: model.errors }, Cmd.none )
 
         SubmitLogin ->
             case model.client of
@@ -409,6 +502,13 @@ viewLoginForm model =
             [ input [ placeholder "email or username", value model.loginIdentity, onInput SetLoginIdentity ] []
             , input [ type_ "password", placeholder "password", value model.loginPassword, onInput SetLoginPassword ] []
             , button [ type_ "submit", disabled (model.client == Nothing) ] [ text "Log in" ]
+            ]
+        , h2 [] [ text "Create account" ]
+        , form [ onSubmit SubmitSignup ]
+            [ input [ placeholder "name", value model.signupName, onInput SetSignupName ] []
+            , input [ placeholder "email", value model.signupEmail, onInput SetSignupEmail ] []
+            , input [ type_ "password", placeholder "password", value model.signupPassword, onInput SetSignupPassword ] []
+            , button [ type_ "submit", disabled (model.client == Nothing) ] [ text "Sign up" ]
             ]
         ]
 

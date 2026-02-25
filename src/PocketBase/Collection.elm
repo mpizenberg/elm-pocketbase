@@ -1,8 +1,8 @@
-module PocketBase.Collection exposing (getOne, getList, create, ListResult)
+module PocketBase.Collection exposing (getOne, getList, create, update, delete, ListResult)
 
 {-| PocketBase collection CRUD operations.
 
-@docs getOne, getList, create, ListResult
+@docs getOne, getList, create, update, delete, ListResult
 
 -}
 
@@ -114,6 +114,61 @@ create client { collection, body, decoder } =
                 [ Internal.clientIdField client
                 , ( "collection", Encode.string collection )
                 , ( "body", body )
+                ]
+        }
+
+
+{-| Update an existing record by ID.
+
+    PocketBase.Collection.update client
+        { collection = "groups"
+        , id = groupId
+        , body = encodeGroupUpdate changes
+        , decoder = groupDecoder
+        }
+
+-}
+update :
+    Client
+    -> { collection : String, id : String, body : Encode.Value, decoder : Decode.Decoder a }
+    -> ConcurrentTask Error a
+update client { collection, id, body, decoder } =
+    ConcurrentTask.define
+        { function = "pocketbase:update"
+        , expect = ConcurrentTask.expectJson decoder
+        , errors = ConcurrentTask.expectErrors PocketBase.errorDecoder
+        , args =
+            Encode.object
+                [ Internal.clientIdField client
+                , ( "collection", Encode.string collection )
+                , ( "id", Encode.string id )
+                , ( "body", body )
+                ]
+        }
+
+
+{-| Delete a record by ID.
+
+    PocketBase.Collection.delete client
+        { collection = "groups"
+        , id = groupId
+        }
+
+-}
+delete :
+    Client
+    -> { collection : String, id : String }
+    -> ConcurrentTask Error ()
+delete client { collection, id } =
+    ConcurrentTask.define
+        { function = "pocketbase:delete"
+        , expect = ConcurrentTask.expectWhatever
+        , errors = ConcurrentTask.expectErrors PocketBase.errorDecoder
+        , args =
+            Encode.object
+                [ Internal.clientIdField client
+                , ( "collection", Encode.string collection )
+                , ( "id", Encode.string id )
                 ]
         }
 
